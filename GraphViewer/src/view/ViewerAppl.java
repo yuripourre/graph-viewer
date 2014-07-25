@@ -1,8 +1,6 @@
 package view;
 
-import graph.ComplexGraph;
-
-import java.util.Set;
+import java.util.List;
 
 import br.com.etyllica.context.Application;
 import br.com.etyllica.core.event.GUIEvent;
@@ -11,9 +9,10 @@ import br.com.etyllica.core.event.PointerEvent;
 import br.com.etyllica.core.graphics.Graphic;
 import br.com.etyllica.core.graphics.SVGColor;
 import br.com.etyllica.linear.graph.Edge;
+import br.com.etyllica.linear.graph.GenericComplexGraph;
 import br.com.etyllica.linear.graph.Node;
 
-public class ViewerAppl extends Application{
+public class ViewerAppl extends Application {
 
 	public ViewerAppl(int w, int h) {
 		super(w, h);
@@ -23,43 +22,45 @@ public class ViewerAppl extends Application{
 	
 	private Node firstChild;
 	
-	private ComplexGraph graph;
+	private GenericComplexGraph<Edge> graph;
+	
+	private final double nodeDistance = 40;
 	
 	@Override
 	public void load() {
 		
 		loading = 10;
 		
-		graph = new ComplexGraph();
+		graph = new GenericComplexGraph<Edge>();
 		
 		root = new Node();
-		root.setLocation(80, 190);
+		root.setLocation(380, 190);
 		
 		firstChild = new Node();		
 		Node secondChild = new Node();
 		Node thirdChild = new Node();
 		
-		Node firstChildSon = new Node();		
+		Node firstChildSon = new Node();
 		
 		//Add three child nodes
 		graph.addNode(root);
 		graph.addNode(firstChild);
 		graph.addNode(secondChild);
 		graph.addNode(thirdChild);
-		graph.addNode(firstChildSon);
 		
 		graph.addEdge(new Edge(root, firstChild));
 		graph.addEdge(new Edge(root, secondChild));
 		graph.addEdge(new Edge(root, thirdChild));
 		
-		graph.addEdge(new Edge(firstChild, new Node()));
-		graph.addEdge(new Edge(firstChild, new Node()));
+		graph.addEdge(new Edge(firstChild, firstChildSon));
+		graph.addEdge(new Edge(thirdChild, new Node()));
+		graph.addEdge(new Edge(thirdChild, new Node()));
 		
-		moveChildrenNodes(root);
+		moveNodes(root);
 		
 		loading = 100;
 	}
-
+	
 	@Override
 	public void draw(Graphic g) {
 		
@@ -68,7 +69,7 @@ public class ViewerAppl extends Application{
 	
 	private void drawLeaf(Graphic g, Node node) {
 				
-		g.fillCircle(node, 5);
+		g.fillCircle(node.getPoint(), 5);
 		
 	}
 	
@@ -84,29 +85,31 @@ public class ViewerAppl extends Application{
 		
 	private void drawEdges(Graphic g, Node node) {
 		
-		Set<Edge> edges = graph.getEdges(node);
+		List<Edge> edges = graph.getEdges(node);
 		
 		g.setColor(SVGColor.RED);
 		
 		for(Edge edge: edges) {
 			
-			g.drawLine(edge.getOrigin(), edge.getDestination());
+			g.drawLine(edge.getOrigin().getPoint(), edge.getDestination().getPoint());
 			
 			drawNode(g, edge.getDestination());
 		}
 				
 	}
 	
-	private void moveChildrenNodes(Node node) {
+	public void moveNodes(Node root) {
+		moveChildrenNodes(root, 0);
+	}
+	
+	private void moveChildrenNodes(Node node, double initialAngle) {
 		
-		Set<Edge> edges = graph.getEdges(node);
+		List<Edge> edges = graph.getEdges(node);
 						
 		int size = edges.size()+1;
 		
-		double theta = Math.PI / size;
-		
-		double distance = 40;
-		
+		double theta = 180 / size;
+				
 		int i = 0;
 				
 		for(Edge edge: edges) {
@@ -115,24 +118,35 @@ public class ViewerAppl extends Application{
 			
 			Node destination = edge.getDestination();
 			
-			double x = node.getX() + distance * Math.cos(theta * i);
-		    double y = node.getY() + distance * Math.sin(theta * i);
+			double angle = (theta * i);
+			
+			if(initialAngle>90) {
+				angle += initialAngle-90;
+			} else {
+				angle -= initialAngle;
+			}
+			
+			double x = node.getPoint().getX() + nodeDistance * Math.cos(Math.toRadians(angle));
+		    double y = node.getPoint().getY() + nodeDistance * Math.sin(Math.toRadians(angle));
 		    
 		    destination.setLocation(x, y);
+		    		    
+		    moveChildrenNodes(destination, angle);
 		    
-		    moveChildrenNodes(destination);
 		}
 		
-	}
+	}	
 		
 	@Override
 	public void update(long now) {
 		
 	}
-	
+		
 	@Override
 	public GUIEvent updateMouse(PointerEvent event) {
-		// TODO Auto-generated method stub
+				
+		//if(event.isDraggedButton(MouseButton.MOUSE_BUTTON_LEFT)) {}
+		
 		return null;
 	}
 		
